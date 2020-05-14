@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/conceptApp/static/css/main.5f361e03.chunk.css",
+    "main.js": "/conceptApp/static/js/main.e671d30a.chunk.js",
+    "main.js.map": "/conceptApp/static/js/main.e671d30a.chunk.js.map",
+    "runtime-main.js": "/conceptApp/static/js/runtime-main.374124cf.js",
+    "runtime-main.js.map": "/conceptApp/static/js/runtime-main.374124cf.js.map",
+    "static/js/2.9a317882.chunk.js": "/conceptApp/static/js/2.9a317882.chunk.js",
+    "static/js/2.9a317882.chunk.js.map": "/conceptApp/static/js/2.9a317882.chunk.js.map",
+    "index.html": "/conceptApp/index.html",
+    "precache-manifest.e4c9d80d63c30222ba3b3edd321be271.js": "/conceptApp/precache-manifest.e4c9d80d63c30222ba3b3edd321be271.js",
+    "service-worker.js": "/conceptApp/service-worker.js",
+    "static/css/main.5f361e03.chunk.css.map": "/conceptApp/static/css/main.5f361e03.chunk.css.map",
+    "static/js/2.9a317882.chunk.js.LICENSE.txt": "/conceptApp/static/js/2.9a317882.chunk.js.LICENSE.txt",
+    "static/media/logo.svg": "/conceptApp/static/media/logo.5d5d9eef.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.374124cf.js",
+    "static/js/2.9a317882.chunk.js",
+    "static/css/main.5f361e03.chunk.css",
+    "static/js/main.e671d30a.chunk.js"
+  ]
+}
