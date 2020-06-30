@@ -11,9 +11,386 @@ class App extends React.Component{
       fileReader:'',
       data: '',
       excelOutput:'',
+      textAreaValue:'',
     }
     
   }
+
+reverseRead(jsonString){
+    
+    let jsonList = JSON.parse(jsonString)
+    let jsonIndex = {}
+    for(let i = 0; i < jsonList.length; i++){
+        let currJSON = jsonList[i]
+        jsonIndex[currJSON['conceptId']] = i
+    }
+    
+    let referenced = [];
+    let clean = [];
+    for(let i = 0; i < jsonList.length; i++){
+        let currFile = jsonList[i];
+        let keys = Object.keys(currFile);
+        for(let j = 0; j < keys.length; j++){
+            let nextObj = currFile[keys[j]]
+            if(keys[j].includes('Source')){
+                if(!clean.includes(i)){
+                    clean.push(i)
+                }
+            }
+            if(Array.isArray(nextObj)){
+                //iterate through array and look for json
+                let toReplace = []
+                for(let k = 0; k < nextObj.length; k++){
+                    let toCheck = nextObj[k]
+                    
+                    if(toCheck.match(/[0-9]{9}.json/) != null){
+                        let cId = toCheck.substring(0,9);
+                        toReplace.push(jsonList[jsonIndex[cId]])
+                        if(!referenced.includes(jsonIndex[cId])){
+                            referenced.push(jsonIndex[cId])
+                        }
+                    }
+                    
+                }
+                if(toReplace.length > 0){
+                    currFile[keys[j]] = toReplace;
+                }
+            }
+            else if(typeof nextObj == 'string'){
+                if(nextObj.match(/[0-9]{9}.json/) != null){
+                    let cId = nextObj.substring(0,9);
+                    currFile[keys[j]] = jsonList[jsonIndex[cId]];
+                    if(!referenced.includes(jsonIndex[cId])){
+                        referenced.push(jsonIndex[cId])
+                    }
+                }
+                //check if string is JSON
+            }
+            else{
+                let currKeys = Object.keys(nextObj)
+                let toReplace = {};
+                for(let k = 0; k < currKeys.length; k++){
+                    if(currKeys[k].match(/[0-9]{9}.json/)){
+                        let cId = currKeys[k].substring(0,9);
+                        toReplace[nextObj[currKeys[k]]] = jsonList[jsonIndex[cId]];
+                        if(!referenced.includes(jsonIndex[cId])){
+                            referenced.push(jsonIndex[cId])
+                        }
+                    }
+                }
+                if(Object.keys(nextObj).length > 0){
+                    currFile[keys[j]] = toReplace;
+                }
+                //check object for JSON
+            }
+        }
+    }
+    for(let i = 0; i < jsonList.length; i++){
+        if(!referenced.includes(i)){
+            if(!clean.includes(i)){
+                clean.push(i)
+            }
+        }
+    }
+
+
+    let finalMatrix = []
+    let finalHeader = []
+    let finalConcepts = []
+    let maxes = []
+    //change to make it recursive
+    for(let i = 0; i < clean.length; i ++){
+        let conceptSeen = [jsonList[clean[i]]['conceptId']]
+        let final = {}
+        this.recurseRead(jsonList[clean[i]],final, '', conceptSeen)
+        finalMatrix.push(final)
+
+        //finalHeader.concat(Object.keys(final)).unique()
+
+
+
+        let keys = Object.keys(final)
+        let finalArr = []
+        let max = 0;
+        for(let j = 0; j < keys.length; j++){
+            if(!finalHeader.includes(keys[j]) && !finalConcepts.includes(keys[j])){
+                if(!keys[j].includes('conceptId')){
+                    if(!keys[j].includes('subcollection') && !keys[j].includes('subcollections')){
+                        finalHeader.push(keys[j])
+                    }
+                }
+                else{
+                    finalConcepts.push(keys[j])
+                }
+            }
+
+            if(final[keys[j]].length > max){
+                max = final[keys[j]].length
+            }
+        }
+
+        maxes.push(max)
+        
+        //console.log(finalArr)
+
+
+    }
+    /*
+    let toExcel = "";
+    toExcel += keys.map(function(value){
+        if(value.indexOf(',') != -1){
+            return "\"" + value + "\"";
+        }
+        else if(value == '0'){
+            return ''
+        }
+        else{
+            return value;
+        }
+    }).join(",");
+    for(let j = 0; j < finalArr.length; j++){
+        toExcel += '\n'
+        toExcel += finalArr[j].map(function(value){
+            if(value.indexOf(',') != -1){
+                return "\"" + value + "\"";
+            }
+            else{
+                return value;
+            }
+        }).join(",");
+    }
+    //console.log(toExcel)
+    fs.writeFileSync('testOutput1.csv', toExcel)
+*/
+    //
+    //reorder the finalHeader
+    //console.log(finalConcepts)
+    //try while organizing data: if key == subcollection, use single key from thing
+    let first = false;
+    for(let i = 0; i < finalHeader.length; i++){
+        let found = false;
+        for(let j = 0; j < finalConcepts.length; j++){    
+            if(finalConcepts[j].includes(finalHeader[i])){
+                finalHeader.splice(i,0,finalConcepts[j])
+                i += 1;
+                j = finalConcepts.length
+                found =true
+            }
+        }
+        if(found == false && first == false){
+            finalHeader.splice(i,0,'conceptId')
+            i += 1;
+            first = true;
+        }
+        
+    }
+    //console.log(finalHeader)
+
+
+
+    let toExcel = ''
+    toExcel += finalHeader.map(function(value){
+        if(value.indexOf('conceptId') != -1){
+            return 'conceptId'
+        }
+        if(value.indexOf(',') != -1){
+            return "\"" + value + "\"";
+        }
+        else if(value == '0'){
+            return ''
+        }
+        else{
+            return value;
+        }
+    }).join(",");
+    //console.log(finalMatrix[1])
+    for(let i =0 ; i < finalMatrix.length; i++){
+       
+        let max = maxes[i]
+        let finalArr = [];
+        let currItem = finalMatrix[i] 
+    
+        for(let k = 0; k < max; k++){
+            let toInsert = []
+            for(let j = 0; j < finalHeader.length; j++){
+
+                toInsert.push('')
+
+            }
+            finalArr.push(toInsert);
+        }
+        for(let j = 0; j < finalHeader.length; j++){
+            let currKey = finalHeader[j]
+            
+            if(currItem.hasOwnProperty(currKey)){
+                let currArr = currItem[currKey]
+                if(currKey != '0'){
+                    for(let k = 0; k < currArr.length; k++){
+                        finalArr[k][j] = currArr[k]
+                    }
+                }
+            }
+        }
+        for(let j = 0; j < finalArr.length; j++){
+            toExcel += '\n'
+            toExcel += finalArr[j].map(function(value){
+                if(value.indexOf(',') != -1){
+                    return "\"" + value + "\"";
+                }
+                else{
+                    return value;
+                }
+            }).join(",");
+        }
+
+    }    
+        
+    
+
+
+    return toExcel;
+    //console.log(toExcel)
+    //console.log(finalConcepts)
+}
+
+recurseRead(curr,final, key, conceptSeen, isSource){
+    let keys = Object.keys(curr)
+    let toPrint = []
+
+    if(curr.hasOwnProperty('conceptId') && key != ''){
+        let nextObj = curr['conceptId']
+        if(key == 'subcollections' || key == 'subcollection'){
+            let found = -1;
+            let firstWithoutconceptId = -1;
+            for(let i = 0; i < keys.length; i++){
+                if(final.hasOwnProperty('conceptId' + keys[i]) && keys[i] != '' && keys[i] != 'subcollections'&& keys[i] != 'subcollection' && found == -1){
+                    found = i;
+                }
+                if(!keys[i].includes('conceptId') && firstWithoutconceptId == -1 && keys[i] != 'subcollections'&& keys[i] != 'subcollection'){
+                    firstWithoutconceptId = i
+                }
+            }
+            let toChange = ''
+            if(found == -1){
+                toChange = keys[firstWithoutconceptId]
+            }
+            else{
+                toChange = keys[found]
+            }
+            
+            if(final.hasOwnProperty('conceptId' + toChange)){
+                if(!final['conceptId' + toChange].includes(nextObj)){
+                    final['conceptId' + toChange].push(nextObj)
+                }
+            }
+            else{
+                final['conceptId' + toChange] = [nextObj]
+            }
+        }
+        else{
+            if(final.hasOwnProperty('conceptId' + key)){
+                if(!final['conceptId' + key].includes(nextObj)){
+                    final['conceptId' + key].push(nextObj)
+                }
+            }
+            else{
+                final['conceptId' + key] = [nextObj]
+
+            }
+        }
+    }
+    
+    for(let j = 0; j < keys.length; j++){
+        let nextObj = curr[keys[j]]
+        if(Array.isArray(nextObj)){
+            let arr = []
+            for(let k = 0; k <nextObj.length; k++){
+                if(typeof nextObj[k] != 'string'){
+                    if(!conceptSeen.includes(nextObj[k]['conceptId'])){
+                        conceptSeen.push(nextObj['conceptId'])
+                        if(!key.includes('Source')){
+                            let returned = this.recurseRead(nextObj[k], final, keys[j], conceptSeen)
+                            arr.push(returned)
+                        }
+                    }
+                }
+                else{
+                    //console.log(JSON.stringify(nextObj))
+                }
+                
+            }
+            //console.log(keys[j])
+            //console.log(arr)
+        }
+
+        else if(typeof nextObj == 'string'){
+            if(keys[j] != 'conceptId' && key != 'conceptId'){
+                if(key == '' || key == 'subcollection'){
+                    if(final.hasOwnProperty(keys[j])){
+                        if(!final[keys[j]].includes(nextObj)){
+                            final[keys[j]].push(nextObj)
+                        }
+                    }
+                    else{
+                        final[keys[j]] = [nextObj]
+                    }
+                    //toPrint.push(keys[j] + ':' + nextObj)
+                    //console.log(keys[j] + ': ' + nextObj)
+                }
+                else{
+                    if(final.hasOwnProperty(key)){
+                        if(!final[key].includes(nextObj)){
+                            final[key].push(nextObj)
+                        }
+                        
+                    }
+                    else{
+                        final[key] = [nextObj]
+                    }
+                    //toPrint.push(key + ':' + nextObj)
+                    //console.log(key + ': ' + nextObj)
+                }
+            }
+
+            else if(keys[j] == 'conceptId' && key == ''){
+                if(final.hasOwnProperty('conceptId' + key)){
+                    if(!final['conceptId' + key].includes(nextObj)){
+                        final['conceptId' + key].push(nextObj)
+                    }
+                }
+                else{
+                    final['conceptId' + key] = [nextObj]
+                }
+            }
+        
+        }
+
+
+        else{
+            if(!nextObj.hasOwnProperty('conceptId') || !conceptSeen.includes(nextObj['conceptId'])){
+                if(nextObj.hasOwnProperty('conceptId')){
+                    conceptSeen.push(nextObj['conceptId'])
+                    this.recurseRead(nextObj, final, keys[j], conceptSeen)
+                }
+                else{
+                    let kList = Object.keys(nextObj);
+                    
+                    for(let k = 0; k < kList.length; k++){
+
+                        if(nextObj[kList[k]].hasOwnProperty('variableName') && !nextObj[kList[k]]['variableName'].includes('=')){
+                            nextObj[kList[k]]['variableName'] = kList[k] + '=' + nextObj[kList[k]]['variableName']
+                        }
+                        this.recurseRead(nextObj[kList[k]], final, keys[j], conceptSeen)
+                    }
+                }
+            }
+
+        }
+
+    }
+    //console.log(toPrint)
+
+}
 
   
 generateNine(){
@@ -45,12 +422,10 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
       conceptIdIndices.push(parseInt(conceptIdObjectKeys[i]))
       conceptIdReverseLookup[conceptIdObject[conceptIdObjectKeys[i]]] = parseInt(conceptIdObjectKeys[i])
   }
-  //console.log(conceptIdReverseLookup)
-  //console.log(conceptIdIndices)
   for(let i = 1; i < cluster.length; i++){
       let currArr = cluster[i]
       for(let j = 0; j < currArr.length; j++){
-          if(currArr[j]!='' && !conceptIdIndices.includes(j)){
+          if(currArr[j].trim()!='' && !conceptIdIndices.includes(j)){
               if(!nonEmpty.includes(j)){
                   nonEmpty.push(j)
               }
@@ -66,7 +441,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
           firstRowJSON[header[i]] = firstRow[i]
       }
   }
-  //console.log(JSON.stringify(cluster))
+
   if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
       if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
           firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
@@ -152,12 +527,10 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
           let nonEmptyIndex = nonEmpty[j];
           
           let currValue = currRow[nonEmptyIndex]
-          
-          //console.log(currValue)
-          //console.log(JSON.stringify(nonEmpty))
-          //console.log(header)
-          //console.log(currRow)
-          if(currValue.indexOf('=') != -1){
+          if(currValue == undefined){
+              
+          }
+          else if(currValue.indexOf('=') != -1){
               leaf = currValue;
               leafIndex = nonEmptyIndex;
               leaves.push(currValue)
@@ -188,14 +561,13 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
           }
           
       }
-      if(currRow[conceptIdReverseLookup['leftMostId']] != ''){
+      if(conceptIdReverseLookup.hasOwnProperty('leftMostId') && currRow[conceptIdReverseLookup['leftMostId']] != ''){
           currCollection['conceptId'] = currRow[conceptIdReverseLookup['leftMostId']]
       }
       if(Object.keys(currCollection).length != 0){
           let cid = this.generateRandomUUID(conceptIdList)
           let objKeys = Object.keys(currCollection);
           for(let i = 0; i < objKeys.length; i++){
-              //console.log(key)
               let key = objKeys[i];
               if(nameToConcept.hasOwnProperty(currCollection[key])){
                   cid = nameToConcept[currCollection[key]]
@@ -211,7 +583,6 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
           currCollection['conceptId'] = cid;
           collectionIds.push(cid + '.json')
           for(let i = 0; i < objKeys.length; i++){
-              //console.log(key)
               let key = objKeys[i]
               nameToConcept[currCollection[key]] = cid;
           }
@@ -224,7 +595,9 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
       firstRowJSON[header[leafIndex]] = leafObj;
   }
   else{
-      firstRowJSON['subcollection'] = collectionIds;
+      if(collectionIds.length > 0){
+        firstRowJSON['subcollection'] = collectionIds;
+      }
       for(let i = 0; i < collections.length; i++){
           let currCollection = collections[i]
           currCollection[header[leafIndex]] = leafObj;
@@ -251,6 +624,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
 }
 
 CSVToArray(strData){
+  strData = strData.trim()
   let arr = [];
   while(strData.indexOf(",") != -1 ){
       let toPush = "";
@@ -268,16 +642,13 @@ CSVToArray(strData){
 
       //let nextQuote = strData.indexOf("\"")
   }
-  if(strData != ""){
-      arr.push(strData);
-  }
+    arr.push(strData);
 
   // Return the parsed data.
   return( arr );
 }
 
 lookForConcepts(cluster, header, idsToInsert, leftMost){
-  //console.log(cluster)
   let leafIndex = -1;
   let nonEmpty = [];
   for(let i = 1; i < cluster.length; i++){
@@ -302,7 +673,6 @@ lookForConcepts(cluster, header, idsToInsert, leftMost){
           leftMost[1] = header[nonEmpty[i]]
       }
   }
-  //console.log(nonEmpty)
   //identify which one is the leaf
 
 }
@@ -323,22 +693,21 @@ getConceptIds(data){
   let idsFound = []
   let conceptIdIndices = []
   let leftMost = []
+  let leftMostStart = -1;
   let firstNotSource = -1;
   let lines = data.split('\n')
-  //console.log(nameToConcept)
+
   for(let x = 0; x < lines.length; x++){
       let line = lines[x]
-      //console.log(line)
+
       //let arr = line.split(',');
       let arr = this.CSVToArray(line, ',')
       if(first){
-          //console.log(line)
           header = arr;
           first = false;
           for(let i = 0; i < arr.length; i++){
               if(arr[i] == "Variable Name"){
                   varLabelIndex = i;
-                  //console.log(varLAbelIndex)
               }
               if(arr[i].indexOf('Source') != -1){
                   idsToInsert.push(i)
@@ -355,6 +724,7 @@ getConceptIds(data){
               }
               
           }
+          leftMostStart = arr.length;
           leftMost.push(arr.length)
           leftMost.push('')
       }
@@ -372,9 +742,8 @@ getConceptIds(data){
       }
   }
   this.lookForConcepts(cluster, header, idsToInsert, leftMost);
-  if(!idsToInsert.includes(leftMost[0])){
+  if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
       idsToInsert.push(leftMost[0])
-      //console.log(leftMost[0])
   }
   let nonIntersects = []
   for(let i = 0; i < idsToInsert.length; i++){
@@ -403,7 +772,14 @@ getConceptIds(data){
           for(let i = 0; i < nonIntersects.length; i++){
               arr.splice(nonIntersects[i],0,'conceptId')
           }
-          toWrite += arr.join(",");
+          toWrite += arr.map(function(value){
+            if(value.indexOf(',') != -1){
+                return "\"" + value + "\"";
+            }
+            else{
+                return value;
+            }
+          }).join(",");
           first = false;
           for(let i = 0; i < arr.length; i++){
               if(arr[i].includes('conceptId') && i != arr.length - 1){
@@ -424,14 +800,18 @@ getConceptIds(data){
               arr.splice(nonIntersects[i],0,'')
           }
           toWrite += '\n'
-          toWrite += arr.join(",");
+          toWrite += arr.map(function(value){
+            if(value.indexOf(',') != -1){
+                return "\"" + value + "\"";
+            }
+            else{
+                return value;
+            }
+        }).join(",");
       }
-      //console.log(arr)
   }
 
-  //console.log(toWrite)
   this.state.data = toWrite;
-  //console.log(JSON.stringify(finalConceptIndices))
   return finalConceptIndices;
 }
 
@@ -440,7 +820,6 @@ readFile(data){
   let sourceJSONS = []
   let ConceptIndex = '{}'
   let idIndex = '[]'
-  //console.log('idIndex: ' + idIndex)
   let conceptIdList = JSON.parse(idIndex)
   let varLabelIndex = 0;
   let cluster = []
@@ -453,9 +832,7 @@ readFile(data){
   let header = [];
   let nameToConcept = JSON.parse(ConceptIndex);
   let lines = this.state.data.split('\n')
-  //console.log(nameToConcept)
   for (let x = 0; x < lines.length; x++){
-      //console.log(line)
       //let arr = line.split(',');
       let line = lines[x]
       let arr = this.CSVToArray(line, ',')
@@ -490,8 +867,6 @@ readFile(data){
   for(let i = 0; i < sourceJSONS.length; i++){
       jsonList.push(sourceJSONS[i])
   }
-
-  //console.log(excelOutput)
   
   let toPrint = '';
   for(let i=0; i < excelOutput.length; i++){
@@ -506,23 +881,19 @@ readFile(data){
                   return value;
               }
           }).join(",");
-          //console.log(cluster)
           if(i!=excelOutput.length-1 || j!=cluster.length -1){
               toPrint += '\n'
           }
       }
   }
   this.setState({excelOutput:toPrint})
-  //console.log(this.state.toPrint)
   let toReturn = ''
   for(let i = 0; i < jsonList.length; i++){
     toReturn += JSON.stringify(jsonList[i], null, '    ') + '\n'
   }
   //return JSON.stringify(jsonList, null, '\t');
   return jsonList
-  //console.log(toPrint)
-  //console.log(conceptIdList)
-  
+
 }
   handleFileRead = (e) => {
     const content = this.state.fileReader.result;
@@ -533,9 +904,20 @@ readFile(data){
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
     element.click();
+    console.log(JSON.stringify(response))
     this.setState({JSONoutput:response})
   }
   
+  handleCreateReverse = (e) => {
+    let output = this.reverseRead(this.state.textAreaValue)
+    //console.log(output)
+    const element = document.createElement("a");
+    const file = new Blob([output], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = "myFile.csv";
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+  }
 
   handleFileChosen = (file) => {
     this.state.fileReader = new FileReader();
@@ -566,19 +948,28 @@ readFile(data){
     }
     return str.substring(numStart);
   }
+  handleChange = (event) =>{
+    console.log(this.state.textAreaValue)
+    this.setState({textAreaValue:event.target.value})
+  }
   render(){
     return (
       <div className="App" style={{'text-align':'left'}}>
         <header className="App-header" style = {{'font-size':'16px', 'padding-top':'50px', 'padding-bottom':'50px'}}>
+          <h2>CSV to JSONS</h2>
           <input type='file'
                  id='file'
                  className='input-file'
                  accept='.csv'
                  onChange={e=>this.handleFileChosen(e.target.files[0])}
           ></input>
-          <div>
-      </div>
-          <div>
+          <div style = {{'text-align':'center'}}>
+              <p>CSV Rules:</p>
+              <p>There must be a Variable Name field in every full row</p>
+              <p>The leaf nodes (final unit of response) is the only row that is allowed to have an equals sign</p>
+          </div>
+          
+          <div style = {{'padding-left': '50px', 'padding-right':'50px'}}>
               {this.state.JSONoutput.map(s => (<p>{JSON.stringify(s, null, '-').split('\n').map((item) => {
                 return (
                   <span style = {{'padding-left':this.getNumSpaces(item)}}>
@@ -586,9 +977,24 @@ readFile(data){
                   <br/>
                   </span>
                 )
-              })}</p>))}
+              })}</p>))
+              /*JSON.stringify(this.state.JSONoutput)*/}
           </div>
+          <br/>
+          <br/>
+          <h2>JSONS to CSV</h2>
+          <p>Enter a list of JSONS, and we will generate a csv file for it</p>
+          <div>
+            <textarea
+                value={this.state.textAreaValue}
+                onChange={this.handleChange}
+                rows={10}
+                cols={50}
+                />
+          </div>
+          <button type="button" onClick={this.handleCreateReverse}>Convert!</button>
         </header>
+
       </div>
     );
   }
