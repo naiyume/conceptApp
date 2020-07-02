@@ -412,214 +412,218 @@ generateRandomUUID(conceptIdList){
 }
 
 processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList, conceptIdObject, sourceJSONS, jsonList){
-  let nonEmpty = [];
-  let list = [1,2,3]
-  let conceptIdObjectKeys =Object.keys(conceptIdObject)
-  let conceptIdIndices = [];
-  let generalId = -1;
-  let conceptIdReverseLookup = {};
-  for(let i = 0; i < conceptIdObjectKeys.length; i++){
-      conceptIdIndices.push(parseInt(conceptIdObjectKeys[i]))
-      conceptIdReverseLookup[conceptIdObject[conceptIdObjectKeys[i]]] = parseInt(conceptIdObjectKeys[i])
-  }
-  for(let i = 1; i < cluster.length; i++){
-      let currArr = cluster[i]
-      for(let j = 0; j < currArr.length; j++){
-          if(currArr[j].trim()!='' && !conceptIdIndices.includes(j)){
-              if(!nonEmpty.includes(j)){
-                  nonEmpty.push(j)
-              }
-          }
-      }
-  }
-  
-  let firstRowJSON = {}
-  let firstRow = cluster[0]
-  let clump = [];
-  for(let i = 0; i < firstRow.length; i++){
-      if(firstRow[i] != "" && !nonEmpty.includes(i) && !conceptIdIndices.includes(i)){
-          firstRowJSON[header[i]] = firstRow[i]
-      }
-  }
+    let nonEmpty = [];
+    let list = [1,2,3]
+    let conceptIdObjectKeys =Object.keys(conceptIdObject)
+    let conceptIdIndices = [];
+    let generalId = -1;
+    let conceptIdReverseLookup = {};
+    for(let i = 0; i < conceptIdObjectKeys.length; i++){
+        conceptIdIndices.push(parseInt(conceptIdObjectKeys[i]))
+        conceptIdReverseLookup[conceptIdObject[conceptIdObjectKeys[i]]] = parseInt(conceptIdObjectKeys[i])
+    }
 
-  if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
-      if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
-          firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
-          if(!conceptIdList.includes(firstRowJSON['conceptId'])){
-              conceptIdList.push(firstRowJSON['conceptId'])
-          }
-          
-      }
-      else{
-           firstRowJSON['conceptId'] = this.generateRandomUUID(conceptIdList);
-           conceptIdList.push(firstRowJSON['conceptId'])
-           nameToConcept[firstRow[indexVariableName]] = firstRowJSON['conceptId']
-      }
-  }
-  firstRow[conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
-  
-  //find sources first
-  let conceptColNames = Object.keys(conceptIdReverseLookup)
-  for(let i = 0; i < conceptColNames.length; i++){
-      if(conceptColNames[i].indexOf('Source') != -1){
-          let currId = firstRow[conceptIdReverseLookup[conceptColNames[i]]]
-          
-          let currVarName = firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1]
-          
-          if(currId == '' && nameToConcept.hasOwnProperty(currVarName)){
-              currId = nameToConcept[currVarName]
-          }
+    for(let i = 1; i < cluster.length; i++){
+        let currArr = cluster[i]
+        for(let j = 0; j < currArr.length; j++){
+            if(currArr[j].trim()!='' && !conceptIdIndices.includes(j)){
+                if(!nonEmpty.includes(j)){
+                    nonEmpty.push(j)
+                }
+            }
+        }
+    }
+    
+    let firstRowJSON = {}
+    let firstRow = cluster[0]
+    let clump = [];
+    console.log(JSON.stringify(conceptIdObject))
+    for(let i = 0; i < firstRow.length; i++){
+        if(firstRow[i] != "" && !nonEmpty.includes(i) || (conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId")){
+            firstRowJSON[header[i]] = firstRow[i]
+        }
+    }
+    console.log(JSON.stringify(firstRowJSON))
+    if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
+        if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
+            firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
+            if(!conceptIdList.includes(firstRowJSON['conceptId'])){
+                conceptIdList.push(firstRowJSON['conceptId'])
+            }
+        }
+        else{
+             firstRowJSON['conceptId'] = this.generateRandomUUID(conceptIdList);
+             conceptIdList.push(firstRowJSON['conceptId'])
+             nameToConcept[firstRow[indexVariableName]] = firstRowJSON['conceptId']
+        }
+    }
+    firstRow[conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
+    
+    //find sources first
+    let conceptColNames = Object.keys(conceptIdReverseLookup)
+    for(let i = 0; i < conceptColNames.length; i++){
+        if(conceptColNames[i].indexOf('Source') != -1){
+            let currId = firstRow[conceptIdReverseLookup[conceptColNames[i]]]
+            
+            let currVarName = firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1]
+            
+            if(currId == '' && nameToConcept.hasOwnProperty(currVarName)){
+                currId = nameToConcept[currVarName]
+            }
 
-          let found = -1;
-          for(let j = 0; j < sourceJSONS.length; j++){
-              let currJSON = sourceJSONS[j];
-              if(currId != '' && currJSON['conceptId'] == currId){
-                  found = i;
-                  if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
-                      currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
-                  }
-                  j = sourceJSONS.length;
-              }
-              else if(currId == '' && currVarName == currJSON['Variable Name']){
-                  found = i;
-                  currId = currJSON['conceptId'];
-                  if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
-                      currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
-                  }
-                  j = sourceJSONS.length
-              }
-          }
-          if(found == -1){
-              let newJSON = {}
-              if(currId == ''){
-                  currId = this.generateRandomUUID(conceptIdList);
-              }
-              
-              newJSON['conceptId'] = currId;
-              newJSON['Variable Name'] = currVarName;
-              newJSON['subcollections'] = [firstRowJSON['conceptId'] + '.json']
-              sourceJSONS.push(newJSON)
-          }
-          nameToConcept[currVarName] = currId
-          if(!conceptIdList.includes(currId)){
-              conceptIdList.push(currId)
-          }
-          
-          firstRowJSON[header[conceptIdReverseLookup[conceptColNames[i]] + 1]] = currId + '.json'
-          firstRow[conceptIdReverseLookup[conceptColNames[i]]] = currId;
-      }
-  }
+            let found = -1;
+            for(let j = 0; j < sourceJSONS.length; j++){
+                let currJSON = sourceJSONS[j];
+                if(currId != '' && currJSON['conceptId'] == currId){
+                    found = i;
+                    if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
+                        currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
+                    }
+                    j = sourceJSONS.length;
+                }
+                else if(currId == '' && currVarName == currJSON['Variable Name']){
+                    found = i;
+                    currId = currJSON['conceptId'];
+                    if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
+                        currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
+                    }
+                    j = sourceJSONS.length
+                }
+            }
+            if(found == -1){
+                let newJSON = {}
+                if(currId == ''){
+                    currId = this.generateRandomUUID(conceptIdList);
+                }
+                
+                newJSON['conceptId'] = currId;
+                newJSON['Variable Name'] = currVarName;
+                newJSON['subcollections'] = [firstRowJSON['conceptId'] + '.json']
+                sourceJSONS.push(newJSON)
+            }
+            nameToConcept[currVarName] = currId
+            if(!conceptIdList.includes(currId)){
+                conceptIdList.push(currId)
+            }
+            
+            firstRowJSON[header[conceptIdReverseLookup[conceptColNames[i]] + 1]] = currId + '.json'
+            firstRow[conceptIdReverseLookup[conceptColNames[i]]] = currId;
+        }
+    }
 
-  let collections = [];
-  let collectionIds = [];
-  let leaves = []
-  let leafIndex = -1;
-  let leafObj = {}
-  for(let i = 0; i < cluster.length; i++){
-      let ids = [];
-      let currCollection = {}
-      let leaf = ''
-      let currRow = cluster[i];
-      for(let j = 0; j < nonEmpty.length; j++){
-          let currObject = {} 
-          
-          
-          let nonEmptyIndex = nonEmpty[j];
-          
-          let currValue = currRow[nonEmptyIndex]
-          if(currValue == undefined){
-              
-          }
-          else if(currValue.indexOf('=') != -1){
-              leaf = currValue;
-              leafIndex = nonEmptyIndex;
-              leaves.push(currValue)
-              let val = leaf.split('=')[1].trim()
-              let key = leaf.split('=')[0].trim()
-              let cid = this.generateRandomUUID(conceptIdList)
-              if(nameToConcept.hasOwnProperty(val)){
-                  cid = nameToConcept[val]
-              }
-              if(currRow[leafIndex - 1] != ''){
-                  cid = currRow[leafIndex-1];
-              }
-              
-              jsonList.push({'conceptId':cid, 'variableName':val})
-              nameToConcept[val] = cid
-              
-              if(!conceptIdList.includes(cid)){
-                  conceptIdList.push(cid)
-              }
-              leafObj[cid + '.json'] = key
-              currRow[leafIndex-1] = cid
-          }
-          
-          else{
-              if(currRow[nonEmptyIndex] != ''){
-                  currCollection[header[nonEmptyIndex]] = currRow[nonEmptyIndex]
-              }
-          }
-          
-      }
-      if(conceptIdReverseLookup.hasOwnProperty('leftMostId') && currRow[conceptIdReverseLookup['leftMostId']] != ''){
-          currCollection['conceptId'] = currRow[conceptIdReverseLookup['leftMostId']]
-      }
-      if(Object.keys(currCollection).length != 0){
-          let cid = this.generateRandomUUID(conceptIdList)
-          let objKeys = Object.keys(currCollection);
-          for(let i = 0; i < objKeys.length; i++){
-              let key = objKeys[i];
-              if(nameToConcept.hasOwnProperty(currCollection[key])){
-                  cid = nameToConcept[currCollection[key]]
-              }
-          }
-          
-          if(currCollection.hasOwnProperty('conceptId')){
-              cid = currCollection['conceptId'];
-          }
-          if(!conceptIdList.includes(cid)){
-              conceptIdList.push(cid);
-          }
-          currCollection['conceptId'] = cid;
-          collectionIds.push(cid + '.json')
-          for(let i = 0; i < objKeys.length; i++){
-              let key = objKeys[i]
-              nameToConcept[currCollection[key]] = cid;
-          }
-          collections.push(currCollection);
-          cluster[i][conceptIdReverseLookup['leftMostId']] = cid;
-      }   
-  }
+    let collections = [];
+    let collectionIds = [];
+    let leaves = []
+    let leafIndex = -1;
+    let leafObj = {}
+    for(let i = 0; i < cluster.length; i++){
+        let ids = [];
+        let currCollection = {}
+        let leaf = ''
+        let currRow = cluster[i];
+        for(let j = 0; j < nonEmpty.length; j++){
+            let currObject = {} 
+            
+            let nonEmptyIndex = nonEmpty[j];
 
-  if(collections.length == 0  && leaves.length > 0){
-      firstRowJSON[header[leafIndex]] = leafObj;
-  }
-  else{
-      if(collectionIds.length > 0){
-        firstRowJSON['subcollection'] = collectionIds;
-      }
-      for(let i = 0; i < collections.length; i++){
-          let currCollection = collections[i]
-          currCollection[header[leafIndex]] = leafObj;
-          jsonList.push(currCollection)
+            
+            let currValue = currRow[nonEmptyIndex]
+            
+           
+            if(currValue.indexOf('=') != -1){
+                leaf = currValue;
+                leafIndex = nonEmptyIndex;
+                leaves.push(currValue)
+                let val = leaf.split('=')[1].trim()
+                let key = leaf.split('=')[0].trim()
+                let cid = this.generateRandomUUID(conceptIdList)
+                if(nameToConcept.hasOwnProperty(val)){
+                    cid = nameToConcept[val]
+                }
+                if(currRow[leafIndex - 1] != ''){
+                    cid = currRow[leafIndex-1];
+                }
+                
+                //fs.writeFileSync(cid + '.json', JSON.stringify({'conceptId':cid, 'variableName':val}));
+                jsonList.push({'conceptId':cid, 'variableName':val})
+                nameToConcept[val] = cid
+                
+                if(!conceptIdList.includes(cid)){
+                    conceptIdList.push(cid)
+                }
+                leafObj[cid + '.json'] = key
+                currRow[leafIndex-1] = cid
+            }
+            
+            else{
+                if(currRow[nonEmptyIndex] != ''){
+                    currCollection[header[nonEmptyIndex]] = currRow[nonEmptyIndex]
+                }
+            }
+            
+        }
+        if(conceptIdReverseLookup.hasOwnProperty('leftMostId') && currRow[conceptIdReverseLookup['leftMostId']] != ''){
+            currCollection['conceptId'] = currRow[conceptIdReverseLookup['leftMostId']]
+        }
+        if(Object.keys(currCollection).length != 0){
+            let cid = this.generateRandomUUID(conceptIdList)
+            let objKeys = Object.keys(currCollection);
+            for(let i = 0; i < objKeys.length; i++){
+                let key = objKeys[i];
+                if(nameToConcept.hasOwnProperty(currCollection[key])){
+                    cid = nameToConcept[currCollection[key]]
+                }
+            }
+            
+            if(currCollection.hasOwnProperty('conceptId')){
+                cid = currCollection['conceptId'];
+            }
+            if(!conceptIdList.includes(cid)){
+                conceptIdList.push(cid);
+            }
+            currCollection['conceptId'] = cid;
+            collectionIds.push(cid + '.json')
+            for(let i = 0; i < objKeys.length; i++){
+                let key = objKeys[i]
+                nameToConcept[currCollection[key]] = cid;
+            }
+            collections.push(currCollection);
+            cluster[i][conceptIdReverseLookup['leftMostId']] = cid;
+            //fs.writeFileSync(cid + '.json', currCollection);
+        }   
+    }
 
-      }
-  }
-  
-  if(cluster[0][conceptIdReverseLookup['thisRowId']] == ''){
-      firstRowJSON['conceptId'] = this.generateRandomUUID(conceptIdList);
-      if(nameToConcept.hasOwnProperty(firstRowJSON[header[indexVariableName]])){
-          firstRowJSON['conceptId'] = nameToConcept[firstRowJSON[header[indexVariableName]]];
-      }
-      cluster[0][conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
-      nameToConcept[firstRowJSON[header[indexVariableName]]] = firstRowJSON['conceptId']
-  }
-  else{
-      firstRowJSON['conceptId'] = cluster[0][conceptIdReverseLookup['thisRowId']]
-      nameToConcept[firstRowJSON[header[indexVariableName]]] = firstRowJSON['conceptId']
-  }
-  jsonList.push(firstRowJSON);
-  return cluster;
+    if(collections.length == 0  && leaves.length > 0){
+        firstRowJSON[header[leafIndex]] = leafObj;
+    }
+    else{
+        if(collectionIds.length != 0){
+            firstRowJSON['subcollection'] = collectionIds;
+        }
+        for(let i = 0; i < collections.length; i++){
+            let currCollection = collections[i]
+            currCollection[header[leafIndex]] = leafObj;
+            //fs.writeFileSync(currCollection['conceptId']+ '.json', JSON.stringify(currCollection));
+            jsonList.push(currCollection)
+
+        }
+    }
+    
+    if(cluster[0][conceptIdReverseLookup['thisRowId']] == ''){
+        firstRowJSON['conceptId'] = this.generateRandomUUID(conceptIdList);
+        if(nameToConcept.hasOwnProperty(firstRowJSON[header[indexVariableName]])){
+            firstRowJSON['conceptId'] = nameToConcept[firstRowJSON[header[indexVariableName]]];
+        }
+        cluster[0][conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
+        nameToConcept[firstRowJSON[header[indexVariableName]]] = firstRowJSON['conceptId']
+    }
+    else{
+        firstRowJSON['conceptId'] = cluster[0][conceptIdReverseLookup['thisRowId']]
+        nameToConcept[firstRowJSON[header[indexVariableName]]] = firstRowJSON['conceptId']
+    }
+    jsonList.push(firstRowJSON);
+    return cluster;
+
 
 }
 
@@ -903,7 +907,7 @@ readFile(data){
     element.href = URL.createObjectURL(file);
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
-    element.click();
+    //element.click();
     console.log(JSON.stringify(response))
     this.setState({JSONoutput:response})
   }
@@ -916,7 +920,7 @@ readFile(data){
     element.href = URL.createObjectURL(file);
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
-    element.click();
+    //element.click();
   }
 
   handleFileChosen = (file) => {
