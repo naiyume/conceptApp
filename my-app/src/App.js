@@ -907,7 +907,7 @@ readFile(data){
     element.href = URL.createObjectURL(file);
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
-    //element.click();
+    element.click();
     console.log(JSON.stringify(response))
     this.setState({JSONoutput:response})
   }
@@ -920,7 +920,7 @@ readFile(data){
     element.href = URL.createObjectURL(file);
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
-    //element.click();
+    element.click();
   }
 
   handleFileChosen = (file) => {
