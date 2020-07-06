@@ -377,8 +377,8 @@ recurseRead(curr,final, key, conceptSeen, isSource){
                     
                     for(let k = 0; k < kList.length; k++){
 
-                        if(nextObj[kList[k]].hasOwnProperty('variableName') && !nextObj[kList[k]]['variableName'].includes('=')){
-                            nextObj[kList[k]]['variableName'] = kList[k] + '=' + nextObj[kList[k]]['variableName']
+                        if(nextObj[kList[k]].hasOwnProperty('Variable Name') && !nextObj[kList[k]]['Variable Name'].includes('=')){
+                            nextObj[kList[k]]['Variable Name'] = kList[k] + '=' + nextObj[kList[k]]['Variable Name']
                         }
                         this.recurseRead(nextObj[kList[k]], final, keys[j], conceptSeen)
                     }
@@ -545,7 +545,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
                 }
                 
                 //fs.writeFileSync(cid + '.json', JSON.stringify({'conceptId':cid, 'variableName':val}));
-                jsonList.push({'conceptId':cid, 'variableName':val})
+                jsonList.push({'conceptId':cid, 'Variable Name':val})
                 nameToConcept[val] = cid
                 
                 if(!conceptIdList.includes(cid)){
