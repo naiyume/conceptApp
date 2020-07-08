@@ -12,6 +12,7 @@ class App extends React.Component{
       data: '',
       excelOutput:'',
       textAreaValue:'',
+      finalMatrix:[[]],
     }
     
   }
@@ -27,6 +28,7 @@ reverseRead(jsonString){
     
     let referenced = [];
     let clean = [];
+    let cleancheck = [];
     for(let i = 0; i < jsonList.length; i++){
         let currFile = jsonList[i];
         let keys = Object.keys(currFile);
@@ -35,6 +37,7 @@ reverseRead(jsonString){
             if(keys[j].includes('Source')){
                 if(!clean.includes(i)){
                     clean.push(i)
+                    cleancheck.push(i)
                 }
             }
             if(Array.isArray(nextObj)){
@@ -85,14 +88,33 @@ reverseRead(jsonString){
             }
         }
     }
-    for(let i = 0; i < jsonList.length; i++){
-        if(!referenced.includes(i)){
-            if(!clean.includes(i)){
-                clean.push(i)
-            }
+
+    let cIds = [];
+    for(let i = 0; i < referenced.length; i++){
+        if(!cIds.includes(jsonList[referenced[i]]['conceptId'])){
+            cIds.push(jsonList[referenced[i]]['conceptId'])
         }
     }
+    
+    for(let i = 0; i < jsonList.length; i++){
+        if(!cIds.includes(jsonList[i]['conceptId'])){
+            if(!clean.includes(i)){
+                clean.push(i);
+            }
+        }
+       
+    }
+    
 
+    let myList = []
+    for(let i = 0; i < clean.length; i++){
+        //if(!clean.includes(jsonList[i]['conceptId'])){
+        //if(!cleancheck.includes(clean[i]))
+            myList.push(jsonList[clean[i]]['conceptId']);
+        //}
+        //myList.push(jsonList[clean[i]]['conceptId']);
+    }
+   this.setState({finalMatrix:myList});
 
     let finalMatrix = []
     let finalHeader = []
@@ -974,15 +996,15 @@ readFile(data){
           </div>
           
           <div style = {{'padding-left': '50px', 'padding-right':'50px'}}>
-              {this.state.JSONoutput.map(s => (<p>{JSON.stringify(s, null, '-').split('\n').map((item) => {
+              {/*this.state.JSONoutput.map(s => (<p>{JSON.stringify(s, null, '-').split('\n').map((item) => {
                 return (
                   <span style = {{'padding-left':this.getNumSpaces(item)}}>
                   {this.removeLeading(item)}
                   <br/>
                   </span>
                 )
-              })}</p>))
-              /*JSON.stringify(this.state.JSONoutput)*/}
+              })}</p>))*/
+              JSON.stringify(this.state.JSONoutput)}
           </div>
           <br/>
           <br/>
@@ -997,6 +1019,7 @@ readFile(data){
                 />
           </div>
           <button type="button" onClick={this.handleCreateReverse}>Convert!</button>
+          <div style = {{'word-wrap': 'break-word','padding-left': '50px', 'padding-right':'50px'}}><p>{(this.state.finalMatrix.map(s => JSON.stringify(s))).toString()}</p></div>
         </header>
 
       </div>
