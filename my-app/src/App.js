@@ -13,6 +13,7 @@ class App extends React.Component{
       excelOutput:'',
       textAreaValue:'',
       finalMatrix:[[]],
+      displayMatrix:[],
     }
     
   }
@@ -455,20 +456,32 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
             }
         }
     }
-    
+    /*console.log(cluster.length)
+    console.log(JSON.stringify(conceptIdIndices))
+    console.log(JSON.stringify(header))
+    console.log(JSON.stringify(nonEmpty))
+    */
     let firstRowJSON = {}
     let firstRow = cluster[0]
     let clump = [];
-    console.log(JSON.stringify(conceptIdObject))
+    let findIndex = 0;
+    //console.log(JSON.stringify(conceptIdObject))
     for(let i = 0; i < firstRow.length; i++){
+        if(conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId"){
+            findIndex = i;
+        }
         if(firstRow[i] != "" && !nonEmpty.includes(i) || (conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId")){
+            
             firstRowJSON[header[i]] = firstRow[i]
         }
     }
-    console.log(JSON.stringify(firstRowJSON))
+    //console.log(JSON.stringify(cluster[0]))
+    //console.log()
+    //console.log(JSON.stringify(firstRowJSON))
     if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
         if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
             firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
+            console.log(nameToConcept[firstRow[indexVariableName]])
             if(!conceptIdList.includes(firstRowJSON['conceptId'])){
                 conceptIdList.push(firstRowJSON['conceptId'])
             }
@@ -480,7 +493,8 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
         }
     }
     firstRow[conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
-    
+    //console.log(JSON.stringify(firstRowJSON))
+    //console.log(JSON.stringify(firstRow))
     //find sources first
     let conceptColNames = Object.keys(conceptIdReverseLookup)
     for(let i = 0; i < conceptColNames.length; i++){
@@ -768,9 +782,13 @@ getConceptIds(data){
       }
   }
   this.lookForConcepts(cluster, header, idsToInsert, leftMost);
+  
   if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
       idsToInsert.push(leftMost[0])
   }
+  console.log(JSON.stringify(idsToInsert))
+
+  //console.log(JSON.stringify(conceptIdIndices))
   let nonIntersects = []
   for(let i = 0; i < idsToInsert.length; i++){
       let found = false;
@@ -790,9 +808,13 @@ getConceptIds(data){
   first = true;
   let finalConceptIndices = {};
   lines = data.split('\n')
+  //console.log(nonIntersects)
   for (let x = 0; x < lines.length; x ++){
+      
       let line = lines[x]
-      let arr = line.split(',')
+      //let arr = line.split(',')
+      let arr = this.CSVToArray(line)
+      //console.log(JSON.stringify(arr))
       if(first == true){
           let general = arr[firstNotSource]
           for(let i = 0; i < nonIntersects.length; i++){
@@ -822,6 +844,7 @@ getConceptIds(data){
           }
       }   
       else{
+          console.log(arr)
           for(let i = 0; i < nonIntersects.length; i++){
               arr.splice(nonIntersects[i],0,'')
           }
@@ -858,10 +881,14 @@ readFile(data){
   let header = [];
   let nameToConcept = JSON.parse(ConceptIndex);
   let lines = this.state.data.split('\n')
+  //console.log(this.state.data)
+
   for (let x = 0; x < lines.length; x++){
       //let arr = line.split(',');
       let line = lines[x]
       let arr = this.CSVToArray(line, ',')
+      //console.log(JSON.stringify(arr))
+      //console.log(line)
       if(first){
           header = arr;
           first = false;
@@ -1019,7 +1046,7 @@ readFile(data){
                 />
           </div>
           <button type="button" onClick={this.handleCreateReverse}>Convert!</button>
-          <div style = {{'word-wrap': 'break-word','padding-left': '50px', 'padding-right':'50px'}}><p>{(this.state.finalMatrix.map(s => JSON.stringify(s))).toString()}</p></div>
+          <div style = {{'word-wrap': 'break-word','padding-left': '50px', 'padding-right':'50px'}}><p>{JSON.stringify(this.state.finalMatrix)/*(this.state.finalMatrix.map(s => JSON.stringify(s))).toString()*/}</p></div>
         </header>
 
       </div>
