@@ -481,7 +481,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
     if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
         if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
             firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
-            console.log(nameToConcept[firstRow[indexVariableName]])
+            //console.log(nameToConcept[firstRow[indexVariableName]])
             if(!conceptIdList.includes(firstRowJSON['conceptId'])){
                 conceptIdList.push(firstRowJSON['conceptId'])
             }
@@ -786,7 +786,7 @@ getConceptIds(data){
   if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
       idsToInsert.push(leftMost[0])
   }
-  console.log(JSON.stringify(idsToInsert))
+  //console.log(JSON.stringify(idsToInsert))
 
   //console.log(JSON.stringify(conceptIdIndices))
   let nonIntersects = []
@@ -844,7 +844,7 @@ getConceptIds(data){
           }
       }   
       else{
-          console.log(arr)
+          //console.log(arr)
           for(let i = 0; i < nonIntersects.length; i++){
               arr.splice(nonIntersects[i],0,'')
           }
@@ -957,7 +957,7 @@ readFile(data){
     element.download = "myFile.csv";
     document.body.appendChild(element); // Required for this to work in FireFox
     element.click();
-    console.log(JSON.stringify(response))
+    //console.log(JSON.stringify(response))
     this.setState({JSONoutput:response})
   }
   
@@ -1002,7 +1002,7 @@ readFile(data){
     return str.substring(numStart);
   }
   handleChange = (event) =>{
-    console.log(this.state.textAreaValue)
+    //console.log(this.state.textAreaValue)
     this.setState({textAreaValue:event.target.value})
   }
   render(){
