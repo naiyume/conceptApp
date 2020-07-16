@@ -500,7 +500,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
     //find sources first
     let conceptColNames = Object.keys(conceptIdReverseLookup)
     for(let i = 0; i < conceptColNames.length; i++){
-        if(conceptColNames[i].indexOf('Source') != -1){
+        if(conceptColNames[i].indexOf('Source') != -1 && firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1] != ''){
             let currId = firstRow[conceptIdReverseLookup[conceptColNames[i]]]
             
             let currVarName = firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1]
@@ -531,7 +531,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
             }
             if(found == -1){
                 let newJSON = {}
-                if(currId == '' && currVarName != ''){
+                if(currId == ''){
                     currId = this.generateRandomUUID(conceptIdList);
                 }
                 
