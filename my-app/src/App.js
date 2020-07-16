@@ -125,7 +125,7 @@ reverseRead(jsonString){
     for(let i = 0; i < clean.length; i ++){
         let conceptSeen = [jsonList[clean[i]]['conceptId']]
         let final = {}
-        this.recurseRead(jsonList[clean[i]],final, '', conceptSeen)
+        this.recurseRead(jsonList[clean[i]],final, '', conceptSeen, 0)
         finalMatrix.push(final)
 
         //finalHeader.concat(Object.keys(final)).unique()
@@ -213,9 +213,6 @@ reverseRead(jsonString){
 
     let toExcel = ''
     toExcel += finalHeader.map(function(value){
-        if(value.indexOf('conceptId') != -1){
-            return 'conceptId'
-        }
         if(value.indexOf(',') != -1){
             return "\"" + value + "\"";
         }
@@ -276,7 +273,8 @@ reverseRead(jsonString){
     //console.log(finalConcepts)
 }
 
-recurseRead(curr,final, key, conceptSeen, isSource){
+recurseRead(curr,final, key, conceptSeen, depth){
+    console.log(depth)
     let keys = Object.keys(curr)
     let toPrint = []
 
@@ -332,7 +330,7 @@ recurseRead(curr,final, key, conceptSeen, isSource){
                     if(!conceptSeen.includes(nextObj[k]['conceptId'])){
                         conceptSeen.push(nextObj['conceptId'])
                         if(!key.includes('Source')){
-                            let returned = this.recurseRead(nextObj[k], final, keys[j], conceptSeen)
+                            let returned = this.recurseRead(nextObj[k], final, keys[j], conceptSeen, depth + 1)
                             arr.push(returned)
                         }
                     }
@@ -393,7 +391,7 @@ recurseRead(curr,final, key, conceptSeen, isSource){
             if(!nextObj.hasOwnProperty('conceptId') || !conceptSeen.includes(nextObj['conceptId'])){
                 if(nextObj.hasOwnProperty('conceptId')){
                     conceptSeen.push(nextObj['conceptId'])
-                    this.recurseRead(nextObj, final, keys[j], conceptSeen)
+                    this.recurseRead(nextObj, final, keys[j], conceptSeen, depth + 1)
                 }
                 else{
                     let kList = Object.keys(nextObj);
@@ -403,7 +401,11 @@ recurseRead(curr,final, key, conceptSeen, isSource){
                         if(nextObj[kList[k]].hasOwnProperty('Variable Name') && !nextObj[kList[k]]['Variable Name'].includes('=')){
                             nextObj[kList[k]]['Variable Name'] = kList[k] + '=' + nextObj[kList[k]]['Variable Name']
                         }
-                        this.recurseRead(nextObj[kList[k]], final, keys[j], conceptSeen)
+                        if(nextObj[kList[k]].hasOwnProperty('conceptId') && !conceptSeen.includes(nextObj[kList[k]]['conceptId'])){
+                            conceptSeen.push(nextObj[kList[k]]['conceptId'])
+                            this.recurseRead(nextObj[kList[k]], final, keys[j], conceptSeen, depth + 1)
+
+                        }
                     }
                 }
             }
@@ -502,6 +504,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
             let currId = firstRow[conceptIdReverseLookup[conceptColNames[i]]]
             
             let currVarName = firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1]
+            //console.log(currVarName )
             
             if(currId == '' && nameToConcept.hasOwnProperty(currVarName)){
                 currId = nameToConcept[currVarName]
@@ -528,7 +531,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
             }
             if(found == -1){
                 let newJSON = {}
-                if(currId == ''){
+                if(currId == '' && currVarName != ''){
                     currId = this.generateRandomUUID(conceptIdList);
                 }
                 
@@ -544,6 +547,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
             
             firstRowJSON[header[conceptIdReverseLookup[conceptColNames[i]] + 1]] = currId + '.json'
             firstRow[conceptIdReverseLookup[conceptColNames[i]]] = currId;
+            
         }
     }
 
@@ -948,6 +952,8 @@ readFile(data){
   return jsonList
 
 }
+
+
   handleFileRead = (e) => {
     const content = this.state.fileReader.result;
     let response = this.readFile(content)
