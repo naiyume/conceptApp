@@ -472,11 +472,15 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
         if(conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId"){
             findIndex = i;
         }
-        if(firstRow[i] != "" && !nonEmpty.includes(i) || (conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId")){
+        if((firstRow[i] != "" && !nonEmpty.includes(i) && !conceptIdIndices.includes(i)) || (conceptIdIndices.includes(i) && conceptIdObject[i] =="thisRowId")){
             
             firstRowJSON[header[i]] = firstRow[i]
         }
     }
+    console.log(JSON.stringify(firstRow))
+    console.log(firstRow[findIndex])
+    //console.log(findIndex)
+    console.log(JSON.stringify(firstRowJSON));
     //console.log(JSON.stringify(cluster[0]))
     //console.log()
     //console.log(JSON.stringify(firstRowJSON))
@@ -494,7 +498,9 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
              nameToConcept[firstRow[indexVariableName]] = firstRowJSON['conceptId']
         }
     }
+    
     firstRow[conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
+    
     //console.log(JSON.stringify(firstRowJSON))
     //console.log(JSON.stringify(firstRow))
     //find sources first
